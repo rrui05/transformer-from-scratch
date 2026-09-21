@@ -8,6 +8,7 @@ class EncoderLayer(nn.Module):
         self.self_attn = MultiHeadAttention(d_model,n_heads,dropout) # 多头自注意力机制
         self.dropout1 == nn.Dropout(dropout)
         # LayerNorm: 对最后一个维度归一化，也就是单取最后一个维度的时候看到的是均值为0，方差为1的分布，LayerNorm是对每个样本独立归一化的
+        # LayerNorm输入参数必须对应最后n个维度
         # 每个token都是横着放的，横着的那个维度
         self.norm1 = nn.LayerNorm(d_model) 
 
