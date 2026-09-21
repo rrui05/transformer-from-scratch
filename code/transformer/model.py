@@ -15,3 +15,42 @@ class Transformer(nn.Module):
         # decoder最后输出的是d_model维特征，但是我们想知道下一个token是词表中的哪一个，
         # 所以要做d_model到tgt_vocab_size的映射,这样就可以得到tgt_vocab_size个token分别对应的分数
         self.fc_out = nn.Linear(d_model,tgt_vocab_size)
+
+    def forward(self,src,tgt,src_mask=None,tgt_mask=None):
+        # src: (batch_size,src_seq_len)
+        # tgt: (batch_size,tgt_seq_len)
+
+        src = self.encoder_embedding(src) * math.sqrt(self.encoder_embedding.embedding_dim)
+        # (batch_size,seq_len,d_model)
+        # 为什么要×math.sqrt((self.encoder_embedding.embedding_dim))?
+        # 本质上是Embedding(x)×根号下d_model，这是以为后续我们会有token Embedding + Position Encoding的操作
+        # 位置编码的数值比较小，再[-1,1]之间，把token embedding放缩到更大对的尺度，让position编码和位置编码的尺寸相近
+        # 避免梯度计算被位置编码主导
+        tgt = self.decoder_embedding(tgt) * math.sqrt(self.decoder_eembedding.embedding_dim)
+
+        src = self.dropout(src)   # (batch_size, src_seq_len, d_model)
+        tgt = self.dropout(tgt)   # (batch_size, tgt_seq_len, d_model)
+
+        src = self.positional_encoding(src)  # (batch_size, src_seq_len, d_model)
+        tgt = self.positional_encoding(tgt)  # (batch_size, tgt_seq_len, d_model)
+
+        enc_output = self.encoder(src,src_mask) # (batch_size, src_seq_len, d_model)
+        dec_output = self.decoder(tgt,enc_output,tgt_mask) # (batch_size, tgt_seq_len, d_model)
+
+        output = self.fc_out(dec_output)  # (batch_size, tgt_seq_len, tgt_vocab_size)
+        return output  # (batch_size, tgt_seq_len, tgt_vocab_size)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
