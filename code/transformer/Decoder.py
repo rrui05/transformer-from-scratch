@@ -1,17 +1,22 @@
+from torch import nn
+from MHA import MultiHeadAttention
+from FFN import FeedForward
+
+
 class DecoderLayer(nn.Module):
-    def __init__():
+    def __init__(self, d_model,n_heads,d_ff,dropout=0.1):
         super().__init__()
         self.self_attn = MultiHeadAttention(d_model,n_heads,dropout)
         self.dropout1 = nn.Dropout(dropout)
-        self.norm1 = nn.Layernorm(d_model)
+        self.norm1 = nn.LayerNorm(d_model)
         
         self.cross_attn = MultiHeadAttention(d_model,n_heads,dropout)
         self.dropout2 = nn.Dropout(dropout)
-        self.norm2 = nn.Layernorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
         
         self.ffn  = FeedForward(d_model,n_heads,dropout)
-        self.dropout = nn.Dropout(dropout)
-        self.norm3 = nn.Layernorm(d_model)
+        self.dropout3 = nn.Dropout(dropout)
+        self.norm3 = nn.LayerNorm(d_model)
         
         
     def forward(self,tgt,src,tgt_mask = None ,src_mask = None):
@@ -22,7 +27,7 @@ class DecoderLayer(nn.Module):
         
         x = tgt 
         output = self.self_attn(x,x,x,tgt_mask) # pytorch 自动调用forward函数
-        x = self.norm1(x + self.dropout(output))
+        x = self.norm1(x + self.dropout1(output))
         
         output = self.cross_attn(x,src,src,src_mask) # kv和Q的seq_len是可以不一样的，因为最后是Q乘K的转置，特征维度（d_model）一样就可以
         x = self.norm2(x + self.dropout2(output))
@@ -34,7 +39,11 @@ class DecoderLayer(nn.Module):
 class Decoder(nn.Module):
     def __init__(self,d_model,n_heads,d_ff,num_layers,dropout=0.1):
         super().__init__()
-        self.layers = nn.ModuleList([DecoderLayer(d_model,d_heads)])
+        self.layers = nn.ModuleList([DecoderLayer(d_model,n_heads,d_ff,dropout) for _ in range(num_layers)])
+        
+        
+        
+        
         
     def forward(self,x,memory,tgt_mask = None,memory_mask = None):
         # x:(batch_size,seq_len,d_model)

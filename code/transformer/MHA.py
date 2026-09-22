@@ -1,3 +1,9 @@
+from torch import nn
+import torch
+import math
+import torch.nn.functional as F
+
+
 class MultiHeadAttention(nn.Module):
     def __init__(self,d_model,n_heads,dropout=0.1):
         super().__init__()
@@ -32,12 +38,12 @@ class MultiHeadAttention(nn.Module):
         batch_size = Q.size(0)
 
         # 将Q,K,V通过线性变换并拆分为多个head，.transpose(1, 2)，交换第一个和第二个维度，从0开始数
-        Q = self.W_q(Q).view(batch_size,self.n_heads,-1,self.d_k).transpose(1,2) # (batch_size, n_heads, seq_len_q, d_k)
-        K = self.W_k(K).view(batch_size,self.n_heads,-1,self.d_k).transpose(1,2) # (batch_size, n_heads, seq_len_k, d_k)
-        V = self.W_v(V).view(batch_size,self.n_heads,-1,self.d_k).transpose(1,2) # (batch_size, n_heads, seq_len_v, d_k)
+        Q = self.W_q(Q).view(batch_size,-1,self.n_heads,self.d_k).transpose(1,2) # (batch_size, n_heads, seq_len_q, d_k)
+        K = self.W_k(K).view(batch_size,-1,self.n_heads,self.d_k).transpose(1,2) # (batch_size, n_heads, seq_len_k, d_k)
+        V = self.W_v(V).view(batch_size,-1,self.n_heads,self.d_k).transpose(1,2) # (batch_size, n_heads, seq_len_v, d_k)
 
 
-        attention_output = self.scaled_dot_product_attention(Q,K,V,mask) # 计算注意力输出 # (batch_size, n_heads, seq_len, d_k)
+        attn_output = self.scaled_dot_product_attention(Q,K,V,mask) # 计算注意力输出 # (batch_size, n_heads, seq_len, d_k)
 
         # (batch_size, n_heads, seq_len, d_k) -> (batch_size, seq_len, d_model),把多个head的输出拼接，维度回到d_model
         attn_output = attn_output.transpose(1, 2).contiguous().view(batch_size, -1, self.d_model)    # (batch_size, seq_len, d_model)
@@ -64,6 +70,23 @@ class MultiHeadAttention(nn.Module):
 
         output = torch.matmul(attn_weights,V) #（batch_size, n_heads, seq_len_q, d_k)
 
+        # 由上可见，attention mask可以拆成两步
+        # weights=softmax(QK^T)
+        # output=weights⋅V
+        
+        # 通俗理解为，用Q去查询K，得到“应该关注哪个K”，基于这个结果去乘V，得到最终的output
+        # 假设 Query 是 "eats"，它和几个 Key 的匹配结果是：
+        #   The   0.05
+        #   cat   0.45
+        #   eats  0.10
+        #   fish  0.40
+        # 好那到这里我们就知道要多关注fish和cat
+        # 然后：
+        # output​=0.05V_The​+0.45V_cat​+0.10V_eats​+0.40V_fish​
+        # 这样才得到最终的输出
+        # 由上同时也可以理解为什么分别叫querry，key，value
+        
+        
         return output
 
 

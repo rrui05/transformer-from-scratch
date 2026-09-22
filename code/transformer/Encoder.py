@@ -1,6 +1,10 @@
 '''
 EncoderLayer 基于MHA和FFN, Encoder层由若干个EncoderLayer组成
 '''
+from MHA import MultiHeadAttention
+from FFN import FeedForward
+from torch import nn
+
 class EncoderLayer(nn.Module):
     def __init__(self,d_model,n_heads,d_ff,dropout=0.1):
         super().__init__()
@@ -20,7 +24,7 @@ class EncoderLayer(nn.Module):
         # x:(batch_size,seq_len,d_model)
         attn_output = self.self_attn(x, x, x, mask) # (batch_size,seq_len,d_model)
         x = self.norm1(x + self.dropout1(attn_output)) # 残差连接+归一化
-        ffn_output = self.fnn(x) # (batch_size,seq_len,d_model)
+        ffn_output = self.ffn(x) # (batch_size,seq_len,d_model)
         x = self.norm2(x + self.dropout2(ffn_output)) 
         return x # (batch_size,seq_len,d_model)
     
@@ -29,7 +33,7 @@ class Encoder(nn.Module):
         super().__init__()
         self.layers = nn.ModuleList([
             EncoderLayer(d_model,n_heads,d_ff,dropout) 
-            for _ in range(num_layers)
+            for _ in range(num_layer)
         ])
         self.norm = nn.LayerNorm(d_model)
         

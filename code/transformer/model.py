@@ -1,11 +1,17 @@
+from torch import nn
+from PositionalEncoding import PositionalEncoding
+from Encoder import Encoder
+from Decoder import Decoder
+import math
+
 class Transformer(nn.Module):
     def __init__(self,src_vocab_size,tgt_vocab_size,d_model,n_heads,d_ff,num_layers,dropout=0.1):
         super().__init__()
         # 原始文本转token会由tokenizer完成，"I love cats"→[137, 521, 89]，然后将token送入embedding
-        # token（输入句子分词后）的长度是不确定的，最后是由embeding把所有token拓展到d_model维特征，才能计算的
-        self.encoder_embeding = nn.Embedding(src_vocab_size,d_model)
-        self.decoder_embeding = nn.Embedding(tgt_vocab_size,d_model) # embedding将每个token多展开出d_model的特征，src(32,10)→(32,10,512)
-        self.positional_encoding = self.Positional_Encoding(d_model)
+        # token（输入句子分词后）的长度是不确定的，最后是由embedding把所有token拓展到d_model维特征，才能计算的
+        self.encoder_embedding = nn.Embedding(src_vocab_size,d_model)
+        self.decoder_embedding = nn.Embedding(tgt_vocab_size,d_model) # embedding将每个token多展开出d_model的特征，src(32,10)→(32,10,512)
+        self.positional_encoding = PositionalEncoding(d_model)
         
         self.dropout = nn.Dropout(dropout)
         
@@ -23,10 +29,10 @@ class Transformer(nn.Module):
         src = self.encoder_embedding(src) * math.sqrt(self.encoder_embedding.embedding_dim)
         # (batch_size,seq_len,d_model)
         # 为什么要×math.sqrt((self.encoder_embedding.embedding_dim))?
-        # 本质上是Embedding(x)×根号下d_model，这是以为后续我们会有token Embedding + Position Encoding的操作
+        # 本质上是embedding(x)×根号下d_model，这是以为后续我们会有token embedding + Position Encoding的操作
         # 位置编码的数值比较小，再[-1,1]之间，把token embedding放缩到更大对的尺度，让position编码和位置编码的尺寸相近
         # 避免梯度计算被位置编码主导
-        tgt = self.decoder_embedding(tgt) * math.sqrt(self.decoder_eembedding.embedding_dim)
+        tgt = self.decoder_embedding(tgt) * math.sqrt(self.decoder_embedding.embedding_dim)
 
         src = self.dropout(src)   # (batch_size, src_seq_len, d_model)
         tgt = self.dropout(tgt)   # (batch_size, tgt_seq_len, d_model)
