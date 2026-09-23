@@ -1,7 +1,7 @@
 import torch.nn as nn
 from einops import rearrange
 
-class Multihead_self_attention(nn.MOdule):
+class Multihead_self_attention(nn.Module):
     def __init__(self,heads,head_dim,dim):
         super().__init__()
         self.head_dim = head_dim # 每一个注意力头的维度
