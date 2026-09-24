@@ -6,5 +6,5 @@
 # reference：
 * transformer：https://zhuanlan.zhihu.com/p/1902691586522981311
 * vit: https://zhuanlan.zhihu.com/p/637787022
-
+* dit: https://huan-yin.github.io/2026/04/09/%E6%89%8B%E6%92%95DiT/
 
